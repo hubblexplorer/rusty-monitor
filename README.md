@@ -3,7 +3,7 @@
 This is a simple system monitor built with Rust and GTK. It displays various system information in real-time, including CPU usage, memory usage.
 
 ## Todo 
-- [x] List of process
+- [x] List of processes
 - [ ] Signals for processes
 - [ ] Change order of processes
 - [ ] Plots of system usage (Current)
