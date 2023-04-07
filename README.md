@@ -1,4 +1,4 @@
-# rusty-monitor
+# Rusty-monitor
 
 This is a simple system monitor built with Rust and GTK. It displays various system information in real-time, including CPU usage, memory usage.
 
