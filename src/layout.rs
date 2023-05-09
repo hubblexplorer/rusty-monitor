@@ -11,7 +11,7 @@ use crate::graphs::cpu_grapth;
 pub fn init_layout(app: &Application){
     let window:ApplicationWindow = gtk::ApplicationWindow::new(app);
     window.set_title(Some("Layout"));
-    window.set_default_size(350, 150);
+    window.set_default_size(350, 350);
 
     let tabs: Notebook = gtk::Notebook::new();
 

@@ -2,6 +2,7 @@ use gtk::{prelude::*, ScrolledWindow, ListStore, TreeView, TreeViewColumn, CellR
 
 use gtk::glib::{clone, MainContext, PRIORITY_DEFAULT};
 use std::cell::RefCell;
+use std::process::Command;
 use std::rc::Rc;
 use std::{thread, time::Duration};
 use sysinfo::{Pid, ProcessExt, System, SystemExt};
@@ -125,13 +126,6 @@ pub fn processes ()-> ScrolledWindow{
 
     tree_view.append_column(&column);
 
-  
-
-    
-
-
-
-
     let (sender, receiver) = MainContext::channel(PRIORITY_DEFAULT);
 
     let sender_clone = sender.clone();
@@ -153,17 +147,32 @@ pub fn processes ()-> ScrolledWindow{
     });
 
     // The main loop executes the closure as soon as it receives the message
+    let tree_view_clone = tree_view.clone();
     receiver.attach(
         None,
         clone!(@weak  list_processes => @default-return Continue(false),
                     move |info| {       
-                        
+                      // Get the TreeSelection object from the tree_view_clone
+                    let selection = tree_view_clone.selection();
+
+                    // Get the selected row
+                    let selected_row = selection.selected().map(|(model, iter)| {
+                        model.get_value(&iter, 0).get::<String>().unwrap()
+                    }).unwrap_or(String::from("-1"));
+                  
                         list_processes.clear();
                         let mut count = 0;
 
                         for i in info {
                             let cpu_usage = format!("{:.4}%", (i.cpu_usage).to_string());
+                            
                             list_processes.insert_with_values(Some(count), &[(0, &i.pid.to_string()), (1,&i.name.to_string()), (2,&cpu_usage)] );
+                            if i.pid.to_string() == selected_row{
+                               
+        
+                                // Set the cursor (and selection) to the specified row
+                                tree_view_clone.set_cursor_from_name(Some(&selected_row));
+                            }
                             count +=1;
                         }
                        
@@ -178,18 +187,32 @@ pub fn processes ()-> ScrolledWindow{
         let menu_button = gtk::Button::new();
         let popover_menu = gtk::Popover::new();
 
-        menu_button.set_label("Edit");
+        menu_button.set_label("Kill");
 
         popover_menu.set_child(Some(&menu_button));
 
         popover_menu.set_parent(&tree_view);
 
         let row_data_ref_clone = Rc::clone(&row_data_ref);
+        let popover_menu_clone = popover_menu.clone();
         menu_button.connect_clicked(move |_| {
-            // TODO: Implement the edit action here
-            let row_data = row_data_ref_clone.borrow();
-            println!("Edit button clicked, row data: {:?}", *row_data);
+    
+            let row_data: std::cell::Ref<Vec<String>> = row_data_ref_clone.borrow();
+            let pid = row_data.first().unwrap();
+            let pid = &pid[..];
+
+          
+            let output = Command::new("kill").arg(pid).spawn()
+            .expect("failed to execute process");
+            println!("{:?}",  output.stdout);
+            popover_menu_clone.hide()
+            
+   
+
+            
         });
+
+    
 
         let gesture_click = gtk::GestureClick::new();
         gesture_click.set_propagation_phase(gtk::PropagationPhase::Capture);
