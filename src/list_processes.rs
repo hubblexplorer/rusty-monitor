@@ -5,8 +5,10 @@ use std::cell::RefCell;
 use std::process::Command;
 use std::rc::Rc;
 use std::{thread, time::Duration};
-use sysinfo::{Pid, ProcessExt, System, SystemExt};
+use sysinfo::{Pid, ProcessExt, System, SystemExt, NetworkExt};
 
+
+//Helper Struct
 #[derive(Clone, Debug)]
 struct Info {
     pid: Pid,
@@ -14,8 +16,9 @@ struct Info {
     cpu_usage: f32,
 }
 
+//Inicializer of struct
 impl Info {
-    // An associated function that creates a new instance of the struct
+    //Callable new for struck
     fn new(pid: Pid, name: String, cpu_usage: f32) -> Info {
         Info {
             pid,
@@ -25,13 +28,10 @@ impl Info {
     }
 }
 
-
+//Funcion responsible for getting process information
 fn getinfo(system: &System) -> Vec<Info> {
-    // Refresh processes information:
-
-    // Print processes information ordered by CPU usage:
+  
     let  processes: Vec<_> = system.processes().iter().collect();
-    
     let mut ret: Vec<Info> = Vec::new();
 
     for (pid, process) in processes {
@@ -46,7 +46,10 @@ fn getinfo(system: &System) -> Vec<Info> {
     return ret;
 }
 
+//Fuction responsible for creating the page of processes
 pub fn processes ()-> ScrolledWindow{
+
+    //Create the ListStore that will save the information of processes in the ScrolledWindow
     let list_processes = ListStore::new(&[String::static_type(),String::static_type(),String::static_type()]);
 
     let tree_view = TreeView::with_model(&list_processes);
@@ -55,6 +58,8 @@ pub fn processes ()-> ScrolledWindow{
 
     let sortable = list_processes.upcast_ref::<TreeSortable>();
 
+    //Columns
+    //--------------------------------------------------------------------------------------
     let cell = CellRendererText::new();
     column.pack_start(&cell, true);
     column.add_attribute(&cell, "text", 0);
@@ -125,6 +130,7 @@ pub fn processes ()-> ScrolledWindow{
 
 
     tree_view.append_column(&column);
+     //--------------------------------------------------------------------------------------
 
     let (sender, receiver) = MainContext::channel(PRIORITY_DEFAULT);
 
@@ -137,9 +143,6 @@ pub fn processes ()-> ScrolledWindow{
             system.refresh_processes();
 
             let info = getinfo(&system);
-
-           // info.sort_by(|a,b| b.cpu_usage.partial_cmp(&a.cpu_usage).unwrap());
-
 
             sender_clone.send(info).expect("Error sending message");
             thread::sleep(Duration::new(2, 500));
@@ -180,10 +183,11 @@ pub fn processes ()-> ScrolledWindow{
                     }
         ),
     );
-
-     //-------------------------------------------------
+    //Menu for processes
+    //------------------------------------------------------------------------------------------
         let row_data_ref = Rc::new(RefCell::new(Vec::new()));
 
+        //Kill button
         let menu_button = gtk::Button::new();
         let popover_menu = gtk::Popover::new();
 
@@ -195,6 +199,7 @@ pub fn processes ()-> ScrolledWindow{
 
         let row_data_ref_clone = Rc::clone(&row_data_ref);
         let popover_menu_clone = popover_menu.clone();
+        //Actions for the kill button
         menu_button.connect_clicked(move |_| {
     
             let row_data: std::cell::Ref<Vec<String>> = row_data_ref_clone.borrow();
@@ -204,29 +209,29 @@ pub fn processes ()-> ScrolledWindow{
           
             let output = Command::new("kill").arg(pid).spawn()
             .expect("failed to execute process");
-            println!("{:?}",  output.stdout);
+            if output.stderr.is_some() {
+                println!("{:?}",  output.stderr);
+            }
             popover_menu_clone.hide()
-            
-   
-
             
         });
 
     
-
+        //Set left click as input
         let gesture_click = gtk::GestureClick::new();
         gesture_click.set_propagation_phase(gtk::PropagationPhase::Capture);
         gesture_click.set_button(gtk::gdk::ffi::GDK_BUTTON_SECONDARY as u32);
         tree_view.add_controller(gesture_click.clone());
         let tree_view_clone = tree_view.clone();
+
+        //Connecter to the right button
         gesture_click.connect_pressed(move |_gesture_click, _n_press, x, y| {
-            println!("Right button pressed at ({}, {})", x, y);
             if let Some((path, _)) = tree_view_clone.dest_row_at_pos(x as i32, y as i32) {
                 let path = path.unwrap();
                 let model = tree_view_clone.model().unwrap();
                 let iter = model.iter(&path).unwrap();
 
-                // Get the data in the row using the TreeIter
+                // Get the data of the process in the row from model
                 let column_count = model.n_columns();
                 let mut row_data = Vec::new();
                 for i in 0..column_count {
@@ -235,19 +240,19 @@ pub fn processes ()-> ScrolledWindow{
                 }
 
                 // Print the data in the row
-                println!("Clicked on row: {:?}, data: {:?}", path.to_str(), row_data);
+                //println!("Clicked on row: {:?}, data: {:?}", path.to_str(), row_data);
 
+                //Send data to button
                 *row_data_ref.borrow_mut() = row_data;
 
+                //Open popup
                 popover_menu
                     .set_pointing_to(Some(&gtk::gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
 
                 popover_menu.popup();
-            } else {
-                println!("No row clicked");
-            }
+            } 
         });
-        //---------------------------------------------
+    //--------------------------------------------------------------------------------------------
 
     let scrolled_window = ScrolledWindow::new();
     scrolled_window.set_policy(gtk::PolicyType::Never, gtk::PolicyType::Always);

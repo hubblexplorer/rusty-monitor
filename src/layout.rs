@@ -1,8 +1,8 @@
 use gtk::{prelude::*, Application, ApplicationWindow, Notebook};
 
-use crate::list_processes::{processes};
+use crate::{list_processes::{processes}, graphs::second_tab};
 
-use crate::graphs::cpu_grapth;
+
 
 
 
@@ -21,7 +21,9 @@ pub fn init_layout(app: &Application){
     tabs.append_page(&tab1, Some(&tab_label));
 
 
-    let tab2 = cpu_grapth::cpu_grapth();
+    
+    //let tab2 = cpu_grapth::cpu_grapth();
+    let tab2 = second_tab::create_tabs();
     let label2 = "Plots";
     let tab_label2 = gtk::Label::new(Some(&label2));
     tabs.append_page(&tab2, Some(&tab_label2));

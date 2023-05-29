@@ -4,13 +4,14 @@ mod list_processes;
 use layout::*;
 
 mod graphs{
-    pub mod cpu_grapth;
+    pub mod graphts;
+    pub mod second_tab;
 }
 
 fn main() {
     let application =
     gtk::Application::new(Some("com.list"), Default::default());
-
+    
     application.connect_activate(init_layout);
     application.run();
 }
