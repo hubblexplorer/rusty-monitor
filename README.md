@@ -4,10 +4,10 @@ This is a simple system monitor built with Rust and GTK. It displays various sys
 
 ## Todo 
 - [x] List of processes
-- [ ] Signals for processes
-- [ ] Change order of processes
-- [ ] Plots of system usage (Current)
-- [ ] About the system page
+- [X] Signals for processes
+- [X] Change order of processes
+- [X] Plots of system usage
+- [ ] About the system page (Current)
 
 ## License
 
