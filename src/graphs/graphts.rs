@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use gtk::prelude::*;
 use gtk::{ ScrolledWindow,DrawingArea};
 use sysinfo::{CpuExt, System, SystemExt};
@@ -56,7 +58,7 @@ pub fn cpu_grapth() -> ScrolledWindow{
         let chart_area: (f64, f64) =
             (height as f64 - padding * 2.0, width as f64 - padding * 2.0);
 
-        cr.set_source_rgb(8.0 / 255.0, 24.0 / 255.0, 31.0 / 255.0); // Background color
+        cr.set_source_rgb(0.0 / 255.0, 0.0 / 255.0, 0.0 / 255.0); // Background color
         cr.paint().expect("Error drawing");
 
         // Set a monospace font
@@ -90,7 +92,7 @@ pub fn cpu_grapth() -> ScrolledWindow{
                 )
             })
             .collect();
-        cr.set_source_rgb(79.0 / 255.0, 134.0 / 255.0, 140.0 / 255.0); // Set the grid lines color
+        cr.set_source_rgb(100.0 / 255.0, 100.0 / 255.0, 100.0 / 255.0); // Set the grid lines color
 
         for y_grid_line in 0..=(max_y as i32) {
             if y_grid_line % 10 == 0 {
@@ -118,7 +120,7 @@ pub fn cpu_grapth() -> ScrolledWindow{
         }
 
         cr.set_line_width(2.0);
-        cr.set_source_rgb(0.0 / 255.0, 200.0 / 255.0, 255.0 / 255.0); // Chart line/label color
+        cr.set_source_rgb(0.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0); // Chart line/label color
 
         let data_window = normalized_data.windows(2);
 
@@ -126,10 +128,14 @@ pub fn cpu_grapth() -> ScrolledWindow{
             let source = points[0];
             let target = points[1];
 
-            // Draw the line
-            cr.move_to(source.0, source.1);
-            cr.line_to(target.0, target.1);
-            cr.stroke().expect("Error drawing");
+            if target.2 != 0.0
+            {
+               
+                // Draw the line
+                cr.move_to(source.0, source.1);
+                cr.line_to(target.0, target.1);
+                cr.stroke().expect("Error drawing");
+            }
 
             // Draw the label
             /*cr.move_to(target.0 - 8.0, target.1 - 10.0);
@@ -143,7 +149,7 @@ pub fn cpu_grapth() -> ScrolledWindow{
 
     ret_window.set_child(Some(&drawing_area));
     // Create a timer that calls queue_draw() on the drawing area every second
-    glib::timeout_add_seconds_local(1, move || {
+    glib::timeout_add_local(Duration::from_millis(1000), move || {
         drawing_area.queue_draw();
         glib::Continue(true)
     });

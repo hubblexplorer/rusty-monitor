@@ -6,6 +6,6 @@ license = "GPL-3.0-or-later"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-gtk = { version = "*", package = "gtk4" , features = ["v4_8"] }
+gtk = { version = "*", package = "gtk4"  }
 sysinfo = "0.28.4"
 glib = "*"

@@ -1,6 +1,4 @@
-use gtk::{prelude::*, Notebook};
-use gtk::{ ScrolledWindow,DrawingArea};
-use sysinfo::{CpuExt, System, SystemExt};
+use gtk::{Notebook};
 
 use crate::graphs::graphts;
 

@@ -47,7 +47,7 @@ fn getinfo(system: &System) -> Vec<Info> {
 }
 
 //Fuction responsible for creating the page of processes
-pub fn processes ()-> gtk::Grid{
+pub fn systemctl_list ()-> gtk::Grid{
 
 
     let grid  = gtk::Grid::new();
@@ -129,57 +129,7 @@ pub fn processes ()-> gtk::Grid{
     tree_view.append_column(&column);
      //--------------------------------------------------------------------------------------
 
-    let (sender, receiver) = MainContext::channel(PRIORITY_DEFAULT);
-
-    let sender_clone = sender.clone();
-    // The long running operation runs now in a separate thread
-
-    thread::spawn(move || {
-        let mut system = System::new_all();
-        loop {
-            system.refresh_processes();
-
-            let info = getinfo(&system);
-
-            sender_clone.send(info).expect("Error sending message");
-            thread::sleep(Duration::new(2, 500));
-        }
-    });
-
-    // The main loop executes the closure as soon as it receives the message
-    let tree_view_clone = tree_view.clone();
-    receiver.attach(
-        None,
-        clone!(@weak  list_processes => @default-return Continue(false),
-                    move |info| {       
-                      // Get the TreeSelection object from the tree_view_clone
-                    let selection = tree_view_clone.selection();
-
-                    // Get the selected row
-                    let selected_row = selection.selected().map(|(model, iter)| {
-                        model.get_value(&iter, 0).get::<String>().unwrap()
-                    }).unwrap_or(String::from("-1"));
-                  
-                        list_processes.clear();
-                        let mut count = 0;
-
-                        for i in info {
-                            let cpu_usage = format!("{:.4}%", (i.cpu_usage).to_string());
-                            
-                            list_processes.insert_with_values(Some(count), &[(0, &i.pid.to_string()), (1,&i.name.to_string()), (2,&cpu_usage)] );
-                            if i.pid.to_string() == selected_row{
-                               
-        
-                                // Set the cursor (and selection) to the specified row
-                                tree_view_clone.set_cursor_from_name(Some(&selected_row));
-                            }
-                            count +=1;
-                        }
-                       
-                        Continue(true)
-                    }
-        ),
-    );
+    
     //Menu for processes
     //------------------------------------------------------------------------------------------
 

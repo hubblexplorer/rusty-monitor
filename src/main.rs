@@ -6,6 +6,10 @@ use layout::*;
 mod graphs{
     pub mod graphts;
     pub mod second_tab;
+ 
+}
+mod list_ctl{
+   
 }
 
 fn main() {
@@ -14,6 +18,7 @@ fn main() {
     
     application.connect_activate(init_layout);
     application.run();
+
 }
 
 
