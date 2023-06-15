@@ -9,3 +9,8 @@ license = "GPL-3.0-or-later"
 gtk = { version = "*", package = "gtk4"  }
 sysinfo = "0.28.4"
 glib = "*"
+strum = "0.24.0"
+strum_macros = "0.24.0"
+itertools = "0.10.3"
+default-env = "0.1"
+rayon = "1.7.0"

@@ -2,15 +2,19 @@ use gtk::{prelude::*};
 mod layout;
 mod list_processes;
 use layout::*;
+#[macro_use]
+extern crate default_env;
+mod systemctl;
+mod list_ctl {
+    pub mod list_ctl;
+}
 
 mod graphs{
     pub mod graphts;
     pub mod second_tab;
  
 }
-mod list_ctl{
-   
-}
+
 
 fn main() {
     let application =

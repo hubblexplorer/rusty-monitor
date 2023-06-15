@@ -2,13 +2,6 @@ use gtk::{prelude::*, Application, ApplicationWindow, Notebook};
 
 use crate::{list_processes::{processes}, graphs::second_tab, list_ctl};
 
-
-
-
-
-
-
-
 pub fn init_layout(app: &Application){
     let window:ApplicationWindow = gtk::ApplicationWindow::new(app);
     window.set_title(Some("Layout"));
@@ -41,17 +34,17 @@ pub fn init_layout(app: &Application){
     tabs.append_page(&tab2, Some(&tab_label2));
 
 
-    let tab3 = list_ctl::systemctl_list();
-    let label3 = "Plots";
-    let tab_label2 = gtk::Label::new(Some(&label2));
-    tabs.append_page(&tab2, Some(&tab_label2));
+    let tab3 = list_ctl::list_ctl::systemctl_list();
+    let label3 = "Systemctl";
+    let tab_label3 = gtk::Label::new(Some(&label3));
+    tabs.append_page(&tab3, Some(&tab_label3));
 
 
-    for i in 3..=4 {
-        let label = format!("Holla {}", i);
-        let tab_label = gtk::Label::new(Some(&label));
-        tabs.append_page(&gtk::Box::new(gtk::Orientation::Vertical, 0), Some(&tab_label));
-    }
+
+    let label = "Holla 4";
+    let tab_label = gtk::Label::new(Some(&label));
+    tabs.append_page(&gtk::Box::new(gtk::Orientation::Vertical, 0), Some(&tab_label));
+    
   
     
     window.set_child(Some(&tabs));

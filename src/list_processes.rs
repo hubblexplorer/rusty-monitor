@@ -1,4 +1,4 @@
-use gtk::{prelude::*, ScrolledWindow, ListStore, TreeView, TreeViewColumn, CellRendererText, TreeSortable, Application};
+use gtk::{prelude::*, ScrolledWindow, ListStore, TreeView, TreeViewColumn, CellRendererText};
 
 use gtk::glib::{clone, MainContext, PRIORITY_DEFAULT};
 use std::cell::RefCell;
