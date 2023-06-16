@@ -67,22 +67,23 @@ pub fn processes ()-> gtk::Grid{
 
     
     filter.set_visible_func(move |model , iter| {
-        
-        if let Ok(value) = model.get_value(iter, 1).get::<String>(){
-            let value = value.as_str().to_lowercase();
-            let searchclone = searchclone.text().to_lowercase();
-            if searchclone == ""
-            {
-                true
-            }
-            else{
-                value.contains(&searchclone)
-            }
-           
-        } 
-        else {
-            false
+        let searchclone = searchclone.text().to_lowercase();
+        if searchclone == "" {
+            true 
         }
+        else {
+        
+            if let Ok(value) = model.get_value(iter,1).get::<String>(){
+                let value = value.as_str().to_lowercase();
+           
+              value.contains(&searchclone)
+            } 
+            else  {
+                false
+            }
+        }
+    
+        
     });
 
 

@@ -59,27 +59,33 @@ pub fn systemctl_list() -> gtk::Grid {
     search.set_editable(true);
 
     //Create the ListStore that will save the information of processes in the ScrolledWindow
-    let list_processes = ListStore::new(&[String::static_type(), String::static_type()]);
-
-    
+    let list_processes = ListStore::new(&[String::static_type(),String::static_type()]);
 
     let searchclone = search.clone();
 
-    let filter = gtk::TreeModelFilter::new(&list_processes, None);
+    let filter = gtk::TreeModelFilter::new(&list_processes,None);
 
-    filter.set_visible_func(move |model, iter| {
-        if let Ok(value) = model.get_value(iter, 1).get::<String>() {
-            let value = value.as_str().to_lowercase();
-            let searchclone = searchclone.text().to_lowercase();
-            if searchclone == "" {
-                true
-            } else {
-                value.contains(&searchclone)
-            }
-        } else {
-            false
+    
+    filter.set_visible_func(move |model , iter| {
+        let searchclone = searchclone.text().to_lowercase();
+        if searchclone == "" {
+            true 
         }
+        else {
+        
+            if let Ok(value) = model.get_value(iter, 0).get::<String>(){
+                let value = value.as_str().to_lowercase();
+           
+              value.contains(&searchclone)
+            } 
+            else  {
+                false
+            }
+        }
+        
     });
+    let filter_clone = filter.clone();
+    search.connect_changed(move |_|{ filter_clone.refilter()});
 
     let model = gtk::TreeModelSort::with_model(&filter);
 
@@ -153,8 +159,6 @@ pub fn systemctl_list() -> gtk::Grid {
                             
                             list_processes.insert_with_values(Some(count), &[(0, &i.0.to_string()), (1,&i.1.to_string())] );
                             if i.0.to_string() == selected_row{
-                               
-        
                                 // Set the cursor (and selection) to the specified row
                                 tree_view_clone.set_cursor_from_name(Some(&selected_row));
                             }
@@ -283,6 +287,7 @@ pub fn systemctl_list() -> gtk::Grid {
 
                 // Get the data of the process in the row from model
                 let column_count = model.n_columns();
+                println!("Column count: {}", column_count);
                 let mut row_data = Vec::new();
                 for i in 0..column_count {
                     let value = model.get_value(&iter, i);
