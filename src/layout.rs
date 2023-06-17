@@ -4,7 +4,7 @@ use crate::{list_processes::{processes}, graphs::second_tab, list_ctl};
 
 pub fn init_layout(app: &Application){
     let window:ApplicationWindow = gtk::ApplicationWindow::new(app);
-    window.set_title(Some("Layout"));
+    window.set_title(Some("Rusty monitor"));
     window.set_default_size(350, 350);
 
     let provider = gtk::CssProvider::new();
@@ -41,7 +41,7 @@ pub fn init_layout(app: &Application){
 
 
 
-    let label = "Holla 4";
+    let label = "To be done";
     let tab_label = gtk::Label::new(Some(&label));
     tabs.append_page(&gtk::Box::new(gtk::Orientation::Vertical, 0), Some(&tab_label));
     
