@@ -6,7 +6,8 @@ This is a simple system monitor built with Rust and GTK. It displays various sys
 - [x] List of processes
 - [x] Signals for processes
 - [x] Change order of processes
-- [x] Plots of system usage (Current)
+- [x] Plots of system usage 
+- [x] Systemctl Page (Current)
 - [ ] About the system page
 
 ## License
