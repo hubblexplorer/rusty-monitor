@@ -701,7 +701,7 @@ checksum = "4f3208ce4d8448b3f3e7d168a73f5e0c43a61e32930de3bceeccedb388b6bf06"
 
 [[package]]
 name = "rusty-monitor"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "default-env",
  "glib",
