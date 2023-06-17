@@ -1,7 +1,5 @@
 use glib::{MainContext, PRIORITY_DEFAULT, clone};
 use gtk::{prelude::*, CellRendererText, ListStore, ScrolledWindow, TreeView, TreeViewColumn};
-
-
 use crate::systemctl::{self, *};
 use rayon::prelude::*;
 use std::cell::{RefCell};
@@ -9,38 +7,20 @@ use std::process::Command;
 use std::rc::Rc;
 use std::thread;
 
-
-//Funcion responsible for getting process information
-/*fn getinfo(system: &System) -> Vec<Info> {
-
-    let  processes: Vec<_> = system.processes().iter().collect();
-    let mut ret: Vec<Info> = Vec::new();
-
-    for (pid, process) in processes {
-        let cpu_usage = process.cpu_usage() / system.cpus().len() as f32;
-
-            let aux: Info = Info::new(*pid, process.name().to_string(), cpu_usage);
-
-            ret.push(aux);
-
-    }
-    ret.sort_by(|a , b| b.cpu_usage.partial_cmp(&a.cpu_usage).unwrap());
-    return ret;
-}*/
-
-fn reload_data() -> Vec<(String, String)> {
+fn reload_data() -> Vec<(String, String, String, String)> {
     let deamons = systemctl::list_units(None, None).unwrap();
-    let result: Vec<(String, String)> = deamons
+    let result: Vec<(String, String,String, String)> = deamons
         .par_iter() // Use parallel iterator
         .filter_map(|daemon| {
             let unit = daemon.as_str();
 
             if let Ok(unit) = Unit::from_systemctl(&unit) {
                 if let Ok(_active) = unit.status() {
-                    Some((unit.name, unit.active.to_string()))
+                    
+                    Some((unit.name, unit.active.to_string(), unit.auto_start.to_string(), unit.description.unwrap_or("".to_string())))
                 } else {
                     None
-                } // Convert bool to String
+                } 
             } else {
                 None
             }
@@ -59,7 +39,7 @@ pub fn systemctl_list() -> gtk::Grid {
     search.set_editable(true);
 
     //Create the ListStore that will save the information of processes in the ScrolledWindow
-    let list_processes = ListStore::new(&[String::static_type(),String::static_type()]);
+    let list_processes = ListStore::new(&[String::static_type(),String::static_type(),String::static_type(),String::static_type()]);
 
     let searchclone = search.clone();
 
@@ -72,7 +52,6 @@ pub fn systemctl_list() -> gtk::Grid {
             true 
         }
         else {
-        
             if let Ok(value) = model.get_value(iter, 0).get::<String>(){
                 let value = value.as_str().to_lowercase();
            
@@ -114,15 +93,25 @@ pub fn systemctl_list() -> gtk::Grid {
     column_name.set_clickable(true);
     tree_view.append_column(&column_name);
 
-    /*let column = TreeViewColumn::new();
+    let column = TreeViewColumn::new();
     let cell = CellRendererText::new();
     column.pack_start(&cell, true);
     column.add_attribute(&cell, "text", 2);
-    column.set_title("Cpu Usage");
+    column.set_title("Auto Start");
     column.set_sort_indicator(true);
     column.set_sort_column_id(2);
     column.set_clickable(true);
-    tree_view.append_column(&column);*/
+    tree_view.append_column(&column);
+
+    let column = TreeViewColumn::new();
+    let cell = CellRendererText::new();
+    column.pack_start(&cell, true);
+    column.add_attribute(&cell, "text", 3);
+    column.set_title("Description");
+    column.set_sort_indicator(true);
+    column.set_sort_column_id(3);
+    column.set_clickable(true);
+    tree_view.append_column(&column);
     //--------------------------------------------------------------------------------------
     let (sender, receiver) = MainContext::channel(PRIORITY_DEFAULT);
 
@@ -155,9 +144,7 @@ pub fn systemctl_list() -> gtk::Grid {
                         let mut count = 0;
 
                         for i in info {
-                            
-                            
-                            list_processes.insert_with_values(Some(count), &[(0, &i.0.to_string()), (1,&i.1.to_string())] );
+                            list_processes.insert_with_values(Some(count), &[(0, &i.0.to_string()), (1,&i.1),(2,&i.2), (3,&i.3.to_string())] );
                             if i.0.to_string() == selected_row{
                                 // Set the cursor (and selection) to the specified row
                                 tree_view_clone.set_cursor_from_name(Some(&selected_row));
@@ -236,6 +223,8 @@ pub fn systemctl_list() -> gtk::Grid {
     let popover_menu_clone = popover_menu.clone();
    
     let sender_clone = sender.clone();
+
+    let list_processes_clone = list_processes.clone();
     //Actions for the start button
     stop_button.connect_clicked(move |_| {
         let sender_clone = sender_clone.clone();
@@ -253,7 +242,103 @@ pub fn systemctl_list() -> gtk::Grid {
         } else {
             //edit row data
         
-            list_processes.clear();
+            list_processes_clone.clear();
+            thread::spawn(move || {
+                
+                output.wait().unwrap();
+                let info = reload_data();
+        
+                sender_clone.send(info).expect("Error sending message");
+                    
+                
+            });
+
+        }
+
+        popover_menu_clone.hide()
+    });
+
+
+    let enable_button = gtk::Button::new();
+
+
+    enable_button.set_label("Enable");
+    popover_menu.set_child(Some(&list_menu));
+
+    list_menu.append(&enable_button);
+
+    let row_data_ref_clone = Rc::clone(&row_data_ref);
+    let popover_menu_clone = popover_menu.clone();
+   
+    let sender_clone = sender.clone();
+    let list_processes_clone = list_processes.clone();
+    //Actions for the start button
+    enable_button.connect_clicked(move |_| {
+        let sender_clone = sender_clone.clone();
+        let row_data: std::cell::Ref<Vec<String>> = row_data_ref_clone.borrow();
+        let pid = row_data.first().unwrap();
+       
+        let pid = &pid[..];
+
+        let mut output = Command::new("pkexec")
+            .args(["systemctl", "enable", pid])
+            .spawn()
+            .expect("failed to execute process");
+      
+        if output.stderr.is_some() {
+            println!("{:?}", output.stderr);
+        } else {
+            //edit row data
+        
+            list_processes_clone.clear();
+            thread::spawn(move || {
+                
+                output.wait().unwrap();
+                let info = reload_data();
+        
+                sender_clone.send(info).expect("Error sending message");
+                    
+                
+            });
+
+        }
+
+        popover_menu_clone.hide()
+    });
+
+
+
+    let disable_button = gtk::Button::new();
+
+
+    disable_button.set_label("Disable");
+    popover_menu.set_child(Some(&list_menu));
+
+    list_menu.append(&disable_button);
+
+    let row_data_ref_clone = Rc::clone(&row_data_ref);
+    let popover_menu_clone = popover_menu.clone();
+   
+    let sender_clone = sender.clone();
+    let list_processes_clone = list_processes.clone();
+    //Actions for the start button
+    disable_button.connect_clicked(move |_| {
+        let sender_clone = sender_clone.clone();
+        let row_data: std::cell::Ref<Vec<String>> = row_data_ref_clone.borrow();
+        let pid = row_data.first().unwrap();
+        let pid = &pid[..];
+
+        let mut output = Command::new("pkexec")
+            .args(["systemctl", "disable", pid])
+            .spawn()
+            .expect("failed to execute process");
+      
+        if output.stderr.is_some() {
+            println!("{:?}", output.stderr);
+        } else {
+            //edit row data
+        
+            list_processes_clone.clear();
             thread::spawn(move || {
                 
                 output.wait().unwrap();

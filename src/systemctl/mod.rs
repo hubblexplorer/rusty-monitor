@@ -171,10 +171,25 @@ pub enum AutoStartStatus {
 
 }
 
+impl ToString for AutoStartStatus{
+    fn to_string(&self) -> String {
+        match self {
+            AutoStartStatus::Static => "static".to_string(),
+            AutoStartStatus::Enabled => "enabled".to_string(),
+            AutoStartStatus::Disabled => "disabled".to_string(),
+            AutoStartStatus::Generated => "generated".to_string(),
+            AutoStartStatus::Indirect => "indirect".to_string(),
+            AutoStartStatus::Transient => "transient".to_string(),
+            AutoStartStatus::EnabledRuntime => "enabled-runtime".to_string(),
+        }
+    }
+}
+
 impl Default for AutoStartStatus {
     fn default() -> AutoStartStatus {
         AutoStartStatus::Disabled
     }
+      
 }
 
 /// `Type` describes a Unit declaration Type in systemd
@@ -417,8 +432,9 @@ impl Unit {
                 description = Some(itertools::join(&items, " "));
             }
         }
+       
         let items: Vec<_> = name.split_terminator(".").collect();
-        let name = items[0];
+        
         // `type` is deduced from .extension
         let utype = Type::from_str(items[1].trim()).unwrap();
         let mut script: String = String::new();
@@ -447,7 +463,7 @@ impl Unit {
         let mut exec_reload = String::new();
         let mut kill_mode = String::new();
         let mut restart_policy = String::new();
-
+        
         for line in lines {
             let line = line.trim_start();
             if line.starts_with("Loaded:") {
