@@ -7,6 +7,8 @@ use std::process::Command;
 use std::rc::Rc;
 use std::thread;
 
+
+
 fn reload_data() -> Vec<(String, String, String, String)> {
     let deamons = systemctl::list_units(None, None).unwrap();
     let result: Vec<(String, String,String, String)> = deamons
@@ -17,7 +19,7 @@ fn reload_data() -> Vec<(String, String, String, String)> {
             if let Ok(unit) = Unit::from_systemctl(&unit) {
                 if let Ok(_active) = unit.status() {
                     
-                    Some((unit.name, unit.active.to_string(), unit.auto_start.to_string(), unit.description.unwrap_or("".to_string())))
+                    Some((unit.name.to_ascii_lowercase(), unit.active.to_string(), unit.auto_start.to_string(), unit.description.unwrap_or("".to_string())))
                 } else {
                     None
                 } 
@@ -69,6 +71,7 @@ pub fn systemctl_list() -> gtk::Grid {
     let model = gtk::TreeModelSort::with_model(&filter);
 
     let tree_view = TreeView::with_model(&model);
+    
     tree_view.add_css_class("tree_view");
 
     //Columns
@@ -81,6 +84,7 @@ pub fn systemctl_list() -> gtk::Grid {
     column.set_sort_column_id(0);
     column.set_sort_indicator(true);
     column.set_clickable(true);
+    column.set_resizable(true);
     tree_view.append_column(&column);
 
     let column_name = TreeViewColumn::new();
@@ -91,6 +95,7 @@ pub fn systemctl_list() -> gtk::Grid {
     column_name.set_sort_indicator(true);
     column_name.set_sort_column_id(1);
     column_name.set_clickable(true);
+    column.set_resizable(true);
     tree_view.append_column(&column_name);
 
     let column = TreeViewColumn::new();
@@ -101,6 +106,7 @@ pub fn systemctl_list() -> gtk::Grid {
     column.set_sort_indicator(true);
     column.set_sort_column_id(2);
     column.set_clickable(true);
+    column.set_resizable(true);
     tree_view.append_column(&column);
 
     let column = TreeViewColumn::new();
@@ -111,6 +117,7 @@ pub fn systemctl_list() -> gtk::Grid {
     column.set_sort_indicator(true);
     column.set_sort_column_id(3);
     column.set_clickable(true);
+    column.set_resizable(true);
     tree_view.append_column(&column);
     //--------------------------------------------------------------------------------------
     let (sender, receiver) = MainContext::channel(PRIORITY_DEFAULT);
@@ -396,7 +403,7 @@ pub fn systemctl_list() -> gtk::Grid {
     //--------------------------------------------------------------------------------------------
 
     let scrolled_window = ScrolledWindow::new();
-    scrolled_window.set_policy(gtk::PolicyType::Never, gtk::PolicyType::Always);
+    scrolled_window.set_policy(gtk::PolicyType::Always, gtk::PolicyType::Always);
     scrolled_window.set_child(Some(&tree_view));
     scrolled_window.set_hexpand(true);
     scrolled_window.set_vexpand(true);

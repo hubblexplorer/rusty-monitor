@@ -210,7 +210,7 @@ pub fn ram_graph() -> ScrolledWindow{
         let chart_area: (f64, f64) =
             (height as f64 - padding * 2.0, width as f64 - padding * 2.0);
 
-        cr.set_source_rgb(8.0 / 255.0, 24.0 / 255.0, 31.0 / 255.0); // Background color
+        cr.set_source_rgb(0.0 / 255.0, 0.0 / 255.0, 0.0 / 255.0); // Background color
         cr.paint().expect("Error drawing");
 
         // Set a monospace font

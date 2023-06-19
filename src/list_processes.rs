@@ -1,11 +1,26 @@
-use gtk::{prelude::*, ScrolledWindow, ListStore, TreeView, TreeViewColumn, CellRendererText};
+use gtk::{prelude::*, ScrolledWindow, ListStore, TreeView, TreeViewColumn, CellRendererText, SortType, SortColumn, TreeModelSort, TreeModelFilter, SearchEntry, Grid, Align, Button, Popover, ListBox, GestureClick, PropagationPhase, gdk, PolicyType};
 
 use gtk::glib::{clone, MainContext, PRIORITY_DEFAULT};
 use std::cell::RefCell;
+
 use std::process::Command;
 use std::rc::Rc;
 use std::{thread, time::Duration};
 use sysinfo::{Pid, ProcessExt, System, SystemExt};
+
+
+fn format_memory_usage(memory_usage: u64) -> String {
+    const BASE: u64 = 1024;
+    
+    let units = ["B", "KB", "MB", "GB", "TB"];
+    let mut size = memory_usage as f64;
+    let mut unit_index = 0;
+    while size >= BASE as f64 && unit_index < units.len() - 1 {
+        size /= BASE as f64;
+        unit_index += 1;
+    }
+    format!("{:.2} {}", size, units[unit_index])
+}
 
 
 //Helper Struct
@@ -14,16 +29,23 @@ struct Info {
     pid: Pid,
     name: String,
     cpu_usage: f32,
+    memory: u64,
+    disk_usage: u64,
+    status: String
 }
 
 //Inicializer of struct
 impl Info {
     //Callable new for struck
-    fn new(pid: Pid, name: String, cpu_usage: f32) -> Info {
+    fn new(pid: Pid, name: String, cpu_usage: f32, memory: u64, disk_usage: u64, status: String) -> Info {
         Info {
             pid,
             name,
             cpu_usage,
+            memory,
+            disk_usage,
+            status
+
         }
     }
 }
@@ -36,36 +58,34 @@ fn getinfo(system: &System) -> Vec<Info> {
 
     for (pid, process) in processes {
         let cpu_usage = process.cpu_usage() / system.cpus().len() as f32;
-  
-            let aux: Info = Info::new(*pid, process.name().to_string(), cpu_usage);
-
+            let aux: Info = Info::new(*pid, process.name().to_string(), cpu_usage, process.memory(), process.disk_usage().total_written_bytes, process.status().to_string());
+            
             ret.push(aux);
         
     }
-    ret.sort_by(|a , b| b.cpu_usage.partial_cmp(&a.cpu_usage).unwrap());
     return ret;
 }
 
 //Fuction responsible for creating the page of processes
-pub fn processes ()-> gtk::Grid{
+pub fn processes ()-> Grid{
 
 
-    let grid  = gtk::Grid::new();
+    let grid  = Grid::new();
 
-    let search = gtk::SearchEntry::new();
+    let search = SearchEntry::new();
     search.set_placeholder_text(Some("Find a process"));
-    search.set_property("halign", gtk::Align::Center);
+    search.set_property("halign", Align::Center);
     search.set_editable(true);
 
    
     //Create the ListStore that will save the information of processes in the ScrolledWindow
-    let list_processes = ListStore::new(&[String::static_type(),String::static_type(),String::static_type()]);
+    let list_processes = ListStore::new(&[u64::static_type(),String::static_type(),f32::static_type(),u64::static_type(),u64::static_type(),String::static_type()]);
 
     let searchclone = search.clone();
-
-    let filter = gtk::TreeModelFilter::new(&list_processes,None);
-
     
+     let filter = TreeModelFilter::new(&list_processes,None);
+
+   
     filter.set_visible_func(move |model , iter| {
         let searchclone = searchclone.text().to_lowercase();
         if searchclone == "" {
@@ -90,10 +110,69 @@ pub fn processes ()-> gtk::Grid{
 
     
 
-    let model = gtk::TreeModelSort::with_model(&filter);
+    let model = TreeModelSort::with_model(&filter);
+    model.set_sort_column_id(SortColumn::Index(2), SortType::Descending);
+    /*let model = list_processes.upcast_ref::<TreeSortable>();
+
+    model.set_sort_func(gtk::SortColumn::Index(3),|model, iter1, iter2| {
+        let value1: String = model.get_value(iter1, 3).get().unwrap();
+        let value2: String = model.get_value(iter2, 3).get().unwrap();
+    
+    
+        println!("{} {}", value1, value2);
+    
+        // Extract memory usage numbers from the formatted strings
+        let usage1 = value1.split_whitespace().next().and_then(|s| s.parse::<f64>().ok());
+        let usage2 = value2.split_whitespace().next().and_then(|s| s.parse::<f64>().ok());
+    
+      
+        if let (Some(usage1), Some(usage2)) = (usage1, usage2) {
+            println!("{} {}", usage1, usage2);
+            // Compare memory usage numbers
+            usage1.total_cmp(&usage2).into()
+        } else {
+            // Fallback to comparing the original strings if memory usage parsing fails
+            value1.cmp(&value2).into()
+        }
+    });*/
+
+    
+
+   /*  let filter = gtk::TreeModelFilter::new(model,None);
+
    
+    filter.set_visible_func(move |model , iter| {
+        let searchclone = searchclone.text().to_lowercase();
+        if searchclone == "" {
+            true 
+        }
+        else {
+        
+            if let Ok(value) = model.get_value(iter,1).get::<String>(){
+                let value = value.as_str().to_lowercase();
+           
+              value.contains(&searchclone)
+            } 
+            else  {
+                false
+            }
+        }
+    
+        
+    });*/
+
+   
+    
+   
+  
     let tree_view = TreeView::with_model(&model);
+    
+
+   
+    
     tree_view.add_css_class("tree_view");
+
+   
 
     //Columns
     //--------------------------------------------------------------------------------------
@@ -105,6 +184,7 @@ pub fn processes ()-> gtk::Grid{
     column.set_sort_column_id(0);
     column.set_sort_indicator(true);
     column.set_clickable(true);
+    column.set_resizable(true);
     tree_view.append_column(&column);
 
 
@@ -117,16 +197,84 @@ pub fn processes ()-> gtk::Grid{
     column_name.set_sort_indicator(true);
     column_name.set_sort_column_id(1);
     column_name.set_clickable(true);
+    column.set_resizable(true);
     tree_view.append_column(&column_name);
 
     let column = TreeViewColumn::new();
     let cell = CellRendererText::new();
+    
+    
     column.pack_start(&cell, true);
     column.add_attribute(&cell, "text", 2);
     column.set_title("Cpu Usage");
     column.set_sort_indicator(true);
     column.set_sort_column_id(2);
     column.set_clickable(true);
+    column.set_resizable(true);
+    column.set_sort_order(SortType::Descending);
+
+    column.set_cell_data_func(&cell, |_, cell, model, iter| {
+        let value = model.get_value(iter, 2).get::<f32>().unwrap() ;
+        let text = format!("{:.2}%", value);
+        cell.set_property("text",Some(&text));
+        
+    });
+
+    
+    tree_view.append_column(&column);
+
+
+    let column = TreeViewColumn::new();
+    let cell = CellRendererText::new();
+    column.pack_start(&cell, true);
+    column.add_attribute(&cell, "text", 3);
+    column.set_title("Memory");
+    column.set_sort_indicator(true);
+    column.set_sort_column_id(3);
+    column.set_clickable(true);
+    column.set_resizable(true);
+
+    column.set_cell_data_func(&cell, |_, cell, model, iter| {
+        let value = model.get_value(iter, 3).get::<u64>().unwrap() ;
+        let formatted = format_memory_usage(value);
+        cell.set_property("text",Some(&formatted));
+            
+        
+        
+    });
+    tree_view.append_column(&column);
+
+
+    let column = TreeViewColumn::new();
+    let cell = CellRendererText::new();
+    column.pack_start(&cell, true);
+    column.add_attribute(&cell, "text", 4);
+    column.set_title("Disk Usage");
+    column.set_sort_indicator(true);
+    column.set_sort_column_id(4);
+    column.set_clickable(true);
+    column.set_resizable(true);
+    column.set_cell_data_func(&cell, |_, cell, model, iter| {
+        let value = model.get_value(iter, 4).get::<u64>().unwrap() ;
+        let formatted = format_memory_usage(value);
+        cell.set_property("text",Some(&formatted));
+            
+        
+        
+    });
+    tree_view.append_column(&column);
+
+
+    let column = TreeViewColumn::new();
+    let cell = CellRendererText::new();
+    cell.set_property("text", "value%");
+    column.pack_start(&cell, true);
+    column.add_attribute(&cell, "text", 5);
+    column.set_title("Status");
+    column.set_sort_indicator(true);
+    column.set_sort_column_id(5);
+    column.set_clickable(true);
+    column.set_resizable(true);
     tree_view.append_column(&column);
      //--------------------------------------------------------------------------------------
 
@@ -135,47 +283,46 @@ pub fn processes ()-> gtk::Grid{
     let sender_clone = sender.clone();
     // The long running operation runs now in a separate thread
 
-    thread::spawn(move || {
+    thread::spawn( move || {
         let mut system = System::new_all();
+     
         loop {
+
+           
             system.refresh_processes();
 
             let info = getinfo(&system);
 
             sender_clone.send(info).expect("Error sending message");
             thread::sleep(Duration::new(2, 500));
+           
         }
     });
 
     // The main loop executes the closure as soon as it receives the message
-    let tree_view_clone = tree_view.clone();
+    
     receiver.attach(
         None,
         clone!(@weak  list_processes => @default-return Continue(false),
                     move |info| {       
                       // Get the TreeSelection object from the tree_view_clone
-                    let selection = tree_view_clone.selection();
 
-                    // Get the selected row
-                    let selected_row = selection.selected().map(|(model, iter)| {
-                        model.get_value(&iter, 0).get::<String>().unwrap()
-                    }).unwrap_or(String::from("-1"));
-                  
+                       
+                        
+
                         list_processes.clear();
                         let mut count = 0;
 
                         for i in info {
-                            let cpu_usage = format!("{:.4}%", (i.cpu_usage).to_string());
+                           // let cpu_usage = format!("{:.4}%", (i.cpu_usage).to_string());
+                            //let memory = format_memory_usage(i.memory);
                             
-                            list_processes.insert_with_values(Some(count), &[(0, &i.pid.to_string()), (1,&i.name.to_string()), (2,&cpu_usage)] );
-                            if i.pid.to_string() == selected_row{
-                               
-        
-                                // Set the cursor (and selection) to the specified row
-                                tree_view_clone.set_cursor_from_name(Some(&selected_row));
-                            }
+                            let pid: i32 = i.pid.to_string().parse().unwrap();
+                            list_processes.insert_with_values(Some(count), &[(0, &pid), (1,&i.name.to_string()), (2,&i.cpu_usage),(3,&i.memory),(4,&i.disk_usage),(5,&i.status.to_string())] );
+                           
                             count +=1;
                         }
+                       
                        
                         Continue(true)
                     }
@@ -187,9 +334,9 @@ pub fn processes ()-> gtk::Grid{
         let row_data_ref = Rc::new(RefCell::new(Vec::new()));
 
         //Kill button
-        let kill_button = gtk::Button::new();
-        let popover_menu = gtk::Popover::new();
-        let list_menu = gtk::ListBox::new();
+        let kill_button = Button::new();
+        let popover_menu = Popover::new();
+        let list_menu = ListBox::new();
 
         kill_button.set_label("Kill");
         popover_menu.set_child(Some(&list_menu));
@@ -218,7 +365,7 @@ pub fn processes ()-> gtk::Grid{
         });
 
 
-        let stop_button = gtk::Button::new();
+        let stop_button = Button::new();
 
         stop_button.set_label("Stop");
 
@@ -246,7 +393,7 @@ pub fn processes ()-> gtk::Grid{
 
 
 
-        let cont_button = gtk::Button::new();
+        let cont_button = Button::new();
 
         cont_button.set_label("Continue");
 
@@ -277,9 +424,9 @@ pub fn processes ()-> gtk::Grid{
 
     
         //Set left click as input
-        let gesture_click = gtk::GestureClick::new();
-        gesture_click.set_propagation_phase(gtk::PropagationPhase::Capture);
-        gesture_click.set_button(gtk::gdk::ffi::GDK_BUTTON_SECONDARY as u32);
+        let gesture_click = GestureClick::new();
+        gesture_click.set_propagation_phase(PropagationPhase::Capture);
+        gesture_click.set_button(gdk::ffi::GDK_BUTTON_SECONDARY as u32);
         tree_view.add_controller(gesture_click.clone());
         let tree_view_clone = tree_view.clone();
 
@@ -293,9 +440,21 @@ pub fn processes ()-> gtk::Grid{
                 // Get the data of the process in the row from model
                 let column_count = model.n_columns();
                 let mut row_data = Vec::new();
+                
                 for i in 0..column_count {
                     let value = model.get_value(&iter, i);
-                    row_data.push(value.get::<String>().unwrap());
+                    if let Ok(value) = value.get::<String>() {
+                        row_data.push(value);
+                    }
+                    else if let Ok(value) = value.get::<u64>() {
+                        row_data.push(value.to_string());
+                    }
+                    else if let Ok(value) = value.get::<f32>() {
+                        row_data.push(value.to_string());
+                    }
+                    else {
+                        ()
+                    }
                 }
 
                 // Print the data in the row
@@ -306,7 +465,7 @@ pub fn processes ()-> gtk::Grid{
 
                 //Open popup
                 popover_menu
-                    .set_pointing_to(Some(&gtk::gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
+                    .set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
 
                 popover_menu.popup();
             } 
@@ -326,7 +485,7 @@ pub fn processes ()-> gtk::Grid{
     //--------------------------------------------------------------------------------------------
  
     let scrolled_window = ScrolledWindow::new();
-    scrolled_window.set_policy(gtk::PolicyType::Never, gtk::PolicyType::Always);
+    scrolled_window.set_policy(PolicyType::Automatic, PolicyType::Always);
     scrolled_window.set_child(Some(&tree_view));
     scrolled_window.set_hexpand(true);
     scrolled_window.set_vexpand(true);
