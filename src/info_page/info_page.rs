@@ -1,10 +1,14 @@
-use std::{fs, io::ErrorKind, process::Command};
+use std::{fs, io::{ErrorKind, stdin, Read, Cursor}, process::Command};
 
-use gtk::{gdk_pixbuf::Pixbuf, prelude::*, Grid, Image, Label};
+use gtk::{gdk_pixbuf::{Pixbuf, Colorspace, PixbufLoader}, prelude::*, Grid, Image, Label, gio::{Cancellable, InputStream}};
 
 use reqwest::blocking::get;
 use scraper::{Html, Selector};
 use sysinfo::{CpuExt, System, SystemExt};
+use include_dir::{include_dir, Dir};
+
+
+
 
 fn add_empty_cells(grid: &Grid) {
     let l = Label::new(None);
@@ -69,6 +73,8 @@ fn format_memory_usage(memory_usage: u64) -> String {
 }
 
 pub fn info_page() -> Grid {
+    const ASSETS_DIR: Dir<'_> = include_dir!("src/assets/");
+  
     let os_release_contents = fs::read_to_string("/etc/os-release").unwrap();
 
     let system = System::new_all();
@@ -148,10 +154,18 @@ pub fn info_page() -> Grid {
     grid.add_css_class("debug");
 
     // Distro --------------------------------------------------------
-    let filename = format!("src/resources/512/512_{}.svg", id);
+    let filename = format!("512/512_{}.svg", id);
+    
+    let data = ASSETS_DIR.get_file(filename).unwrap().contents();
+
     
 
-    let pixbuf = Pixbuf::from_file(filename).unwrap();
+
+    let loader = PixbufLoader::new();
+    loader.write(&data);
+    loader.close();    
+
+    let pixbuf =  loader.pixbuf().unwrap();
     let image = Image::from_pixbuf(Some(&pixbuf));
     image.add_css_class("debug");
     grid.attach(&image, 3, 0, 2, 4);

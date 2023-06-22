@@ -1,0 +1,9 @@
+
+[Desktop Entry]
+Name=Rusty Monitor
+Comment=Simple task manager build with Rust and Gtk4
+Exec=rusty-monitor
+Icon=rusty-monitor
+Type=Application
+StartupNotify=true
+Terminal=false
