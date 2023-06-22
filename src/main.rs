@@ -15,10 +15,16 @@ mod graphs{
  
 }
 
+mod info_page{
+    pub mod info_page;
+}
+
 
 fn main() {
+    gtk::init().unwrap();
     let application =
-    gtk::Application::new(Some("com.list"), Default::default());
+    gtk::Application::new(Some("com.rusty-monitor"), Default::default());
+    
     
     application.connect_activate(init_layout);
     application.run();

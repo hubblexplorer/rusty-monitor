@@ -1,6 +1,6 @@
 use gtk::{prelude::*, Application, ApplicationWindow, Notebook};
 
-use crate::{list_processes::{processes}, graphs::second_tab, list_ctl};
+use crate::{list_processes::{processes}, graphs::second_tab, list_ctl, info_page};
 
 
 pub fn init_layout(app: &Application){
@@ -8,6 +8,8 @@ pub fn init_layout(app: &Application){
     window.set_title(Some("Rusty monitor"));
     window.maximize();
 
+    window.set_icon_name(Some("rusty-monitor")); 
+   
     let provider = gtk::CssProvider::new();
     provider.load_from_data(include_str!("style.css"));
 
@@ -44,11 +46,10 @@ pub fn init_layout(app: &Application){
     tabs.append_page(&tab3, Some(&tab_label3));
     
 
-
-    let label = "To be done";
-    let tab_label = gtk::Label::new(Some(&label));
-    tabs.append_page(&gtk::Box::new(gtk::Orientation::Vertical, 0), Some(&tab_label));
-   
+    let tab4 = info_page::info_page::info_page();
+    let label4 = "System Info";
+    let tab_label4 = gtk::Label::new(Some(&label4));
+    tabs.append_page(&tab4, Some(&tab_label4));
     
     
   
