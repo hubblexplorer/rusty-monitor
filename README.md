@@ -22,7 +22,7 @@ This is an work in progress repo.
 - [x] Change order of processes
 - [x] Plots of system usage 
 - [x] Systemctl Page (Current)
-- [ ] About the system page
+- [x] About the system page
 
 ## License
 
