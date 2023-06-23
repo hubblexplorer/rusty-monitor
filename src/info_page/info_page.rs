@@ -339,7 +339,7 @@ pub fn info_page() -> ScrolledWindow {
     grid.attach(&l, 5, 13, 2, 1);
 
     //Desktop
-    let l = Label::new(Some("Desktop: "));
+    let l = Label::new(Some("Display server: "));
     l.add_css_class("debug");
     grid.attach(&l, 3, 14, 2, 1);
 
