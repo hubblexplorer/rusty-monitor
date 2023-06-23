@@ -1,14 +1,11 @@
-use std::{fs, io::{ErrorKind, stdin, Read, Cursor}, process::Command};
+use std::{fs, io::ErrorKind, process::Command};
 
-use gtk::{gdk_pixbuf::{Pixbuf, Colorspace, PixbufLoader}, prelude::*, Grid, Image, Label, gio::{Cancellable, InputStream}};
+use gtk::{gdk_pixbuf::PixbufLoader, prelude::*, Grid, Image, Label, ScrolledWindow, PolicyType};
 
+use include_dir::{include_dir, Dir};
 use reqwest::blocking::get;
 use scraper::{Html, Selector};
 use sysinfo::{CpuExt, System, SystemExt};
-use include_dir::{include_dir, Dir};
-
-
-
 
 fn add_empty_cells(grid: &Grid) {
     let l = Label::new(None);
@@ -30,6 +27,10 @@ fn add_empty_cells(grid: &Grid) {
     let l = Label::new(None);
     l.add_css_class("debug");
     grid.attach(&l, 7, 0, 2, 20);
+
+    let l = Label::new(None);
+    l.add_css_class("debug");
+    grid.attach(&l, 5, 11, 2, 1);
 }
 
 fn get_website(dist_name: &str) -> Result<String, ErrorKind> {
@@ -72,9 +73,9 @@ fn format_memory_usage(memory_usage: u64) -> String {
     format!("{:.2} {}", size, units[unit_index])
 }
 
-pub fn info_page() -> Grid {
+pub fn info_page() -> ScrolledWindow {
     const ASSETS_DIR: Dir<'_> = include_dir!("src/assets/");
-  
+
     let os_release_contents = fs::read_to_string("/etc/os-release").unwrap();
 
     let system = System::new_all();
@@ -155,17 +156,14 @@ pub fn info_page() -> Grid {
 
     // Distro --------------------------------------------------------
     let filename = format!("512/512_{}.svg", id);
-    
+
     let data = ASSETS_DIR.get_file(filename).unwrap().contents();
 
-    
-
-
     let loader = PixbufLoader::new();
-    loader.write(&data);
-    loader.close();    
+    loader.write(&data).expect("Failed to write file");
+    loader.close().expect("Failed to close file");
 
-    let pixbuf =  loader.pixbuf().unwrap();
+    let pixbuf = loader.pixbuf().unwrap();
     let image = Image::from_pixbuf(Some(&pixbuf));
     image.add_css_class("debug");
     grid.attach(&image, 3, 0, 2, 4);
@@ -211,7 +209,6 @@ pub fn info_page() -> Grid {
     let l = Label::new(Some(ram.as_str()));
     l.add_css_class("debug");
     grid.attach(&l, 5, 7, 2, 1);
-
 
     // Graphics-----------------------------------------------------------
     let graphics = {
@@ -268,9 +265,9 @@ pub fn info_page() -> Grid {
 
     // Manufacturer-----------------------------------------------------------
     let manufacturer = Command::new("cat")
-    .arg("/sys/class/dmi/id/product_name")
-    .output()
-    .expect("Not found");
+        .arg("/sys/class/dmi/id/product_name")
+        .output()
+        .expect("Not found");
 
     let l = Label::new(Some("Manufacturer: "));
     l.add_css_class("debug");
@@ -281,13 +278,99 @@ pub fn info_page() -> Grid {
         let l = Label::new(Some(&manufacturer));
         l.add_css_class("debug");
         grid.attach(&l, 5, 9, 2, 1);
-    }
-    else{
+    } else {
         let l = Label::new(Some("Unknown"));
         l.add_css_class("debug");
         grid.attach(&l, 5, 9, 2, 1);
     }
 
+    //Software------------------------------------------
+    let l = Label::new(Some("Software"));
+    l.add_css_class("bold");
+    grid.attach(&l, 3, 10, 4, 1);
+
+    //Kernel version
+    let l = Label::new(Some("Kernel: "));
+    l.add_css_class("debug");
+    grid.attach(&l, 3, 12, 2, 1);
+
+    let os_version = system.kernel_version().unwrap();
+
+    let l = Label::new(Some(&os_version));
+    l.add_css_class("debug");
+    grid.attach(&l, 5, 12, 2, 1);
+
+    //Display server
+    let l = Label::new(Some("Display server: "));
+    l.add_css_class("debug");
+    grid.attach(&l, 3, 13, 2, 1);
+
+    let loginctl_output = Command::new("loginctl")
+        .output()
+        .expect("Failed to execute loginctl command")
+        .stdout;
+
+    let output = String::from_utf8(loginctl_output).unwrap();
+
+    let session_id = output
+        .split_whitespace()
+        .find(|word| word.contains(['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']))
+        .unwrap_or_else(|| {
+            eprintln!("No session ID found");
+            ""
+        });
+
+    let session_type_output = Command::new("loginctl")
+        .arg("show-session")
+        .arg(session_id)
+        .arg("-p")
+        .arg("Type")
+        .output()
+        .expect("Failed to execute loginctl show-session command");
+
+    let session_type = String::from_utf8_lossy(&session_type_output.stdout)
+        .trim()
+        .to_string();
+
+    let session_type = session_type[5..].to_string();
+
+    let l = Label::new(Some(&session_type));
+    l.add_css_class("debug");
+    grid.attach(&l, 5, 13, 2, 1);
+
+    //Desktop
+    let l = Label::new(Some("Display server: "));
+    l.add_css_class("debug");
+    grid.attach(&l, 3, 14, 2, 1);
+
+    let command = Command::new("env")
+        .output()
+        .expect("Failed to execute env command")
+        .stdout;
+
+    let output = String::from_utf8(command).unwrap();
+
+    let desktop_session_line = output
+        .lines()
+        .find(|line| line.contains("DESKTOP_SESSION="))
+        .expect("Failed to find DESKTOP_SESSION line");
+
+    let desktop_session_value = desktop_session_line
+        .split('=')
+        .nth(1)
+        .expect("Failed to extract DESKTOP_SESSION value");
+
+    let l = Label::new(Some(&desktop_session_value));
+    l.add_css_class("debug");
+    grid.attach(&l, 5, 14, 2, 1);
+
     add_empty_cells(&grid);
-    grid
+
+
+    let scrolled_window = ScrolledWindow::new();
+    scrolled_window.set_policy(PolicyType::Automatic, PolicyType::Always);
+    scrolled_window.set_child(Some(&grid));
+    scrolled_window.set_hexpand(true);
+    scrolled_window.set_vexpand(true);
+    scrolled_window
 }

@@ -8,10 +8,10 @@
 
 
 .debug{
-   border: 1px solid red;
+   border: 0px solid red;
 }
 
 .bold{
-   border: 1px solid red;
+   border: 0px solid red;
    font-weight: bold;
 }
