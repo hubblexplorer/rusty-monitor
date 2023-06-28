@@ -215,6 +215,32 @@ pub enum Type {
     Target,
     #[strum(serialize = "swap")]
     Swap,
+    #[strum(serialize = "aa-prompt-listener")]
+    AaPromptListener,
+    #[strum(serialize = "system-shutdown")]
+    SystemShutdown,
+    #[strum(serialize = "recovery-chooser-trigger")]
+    RecoveryChooserTrigger,
+    #[strum(serialize = "failure")]
+    Failure,
+    #[strum(serialize = "unmount")]
+    Unmount,
+    #[strum(serialize = "autoimport")]
+    AutoImport,
+    #[strum(serialize = "snap-repair")]
+    SnapRepair,
+    #[strum(serialize = "mounts-pre")]
+    MountsPre,
+    #[strum(serialize = "mounts-post")]
+    MountsPost,
+    #[strum(serialize = "mounts")]
+    Mounts,
+    #[strum(serialize = "seeded")]
+    Seeded,
+    #[strum(serialize = "apparmor")]
+    Apparmor,
+    #[strum(serialize = "core-fixup")]
+    CoreFixup,
 }
 
 impl Default for Type {
@@ -434,7 +460,7 @@ impl Unit {
         }
        
         let items: Vec<_> = name.split_terminator(".").collect();
-        
+        println!("{}", items[1]);
         // `type` is deduced from .extension
         let utype = Type::from_str(items[1].trim()).unwrap();
         let mut script: String = String::new();

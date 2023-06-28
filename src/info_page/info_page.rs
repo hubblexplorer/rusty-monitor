@@ -38,8 +38,8 @@ fn get_website(dist_name: &str) -> Result<String, ErrorKind> {
         "https://distrowatch.com/table.php?distribution={}",
         dist_name
     );
-    let response = get(&url).unwrap();
-
+    
+    if let Ok(response) = get(&url){
     if response.status().is_success() {
         let body = response.text().unwrap();
 
@@ -58,6 +58,10 @@ fn get_website(dist_name: &str) -> Result<String, ErrorKind> {
     } else {
         return Err(ErrorKind::Other);
     }
+}
+else {
+    return Err(ErrorKind::Other);
+}
 }
 
 fn format_memory_usage(memory_usage: u64) -> String {
