@@ -460,7 +460,6 @@ impl Unit {
         }
        
         let items: Vec<_> = name.split_terminator(".").collect();
-        println!("{}", items[1]);
         // `type` is deduced from .extension
         let utype = Type::from_str(items[1].trim()).unwrap();
         let mut script: String = String::new();
