@@ -160,8 +160,13 @@ pub fn info_page() -> ScrolledWindow {
 
     // Distro --------------------------------------------------------
     let filename = format!("512/512_{}.svg", id);
-
-    let data = ASSETS_DIR.get_file(filename).unwrap().contents();
+    let data ;
+    if let Some(aux) = ASSETS_DIR.get_file(filename){
+        data = aux.contents();
+    }
+    else {
+        data = ASSETS_DIR.get_file("512/Tux.svg").unwrap().contents();
+    }
 
     let loader = PixbufLoader::new();
     loader.write(&data).expect("Failed to write file");

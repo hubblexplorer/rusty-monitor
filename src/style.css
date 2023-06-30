@@ -1,9 +1,36 @@
-.tree_view{
-   background: black;
-   border: dotted 1px grey;
-   color: white;
-   font-size: 20px;
-   font-family: Liberation Sans Regular;
+treeview.view header button { 
+	color: #D8C4B6 ; 
+	background: #213555; 
+	font-weight: bold; 
+	text-shadow: none; 
+	box-shadow: none; }
+
+treeview.view {
+	background-image: linear-gradient(-55deg, #2B2A4C, #4F709C, #5C8984, #213555);
+	background-size: 1000% 50%;
+	font-size: large;
+}
+
+
+searchentry.entry button, entry {
+  	color: #D8C4B6;
+	margin:10px;
+  	padding-left:20px;
+  	font: 14px "Comic Sans";
+}
+
+
+
+@keyframes gradient {
+	0% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+	100% {
+		background-position: 0% 50%;
+	}
 }
 
 
@@ -15,3 +42,4 @@
    border: 0px solid red;
    font-weight: bold;
 }
+
