@@ -10,7 +10,9 @@ This project is **not** assotiated with the Rust Foundation
 ### Graphs page
 ![Graphs page](imgs/img2.png)
 
+# Installation
 
+This project can be install by the AppImage in https://github.com/hubblexplorer/rusty-monitor/releases or by the **AUR** in https://aur.archlinux.org/packages/rusty-monitor-git
 
 # Warning
 
@@ -31,3 +33,5 @@ This system monitor is released under the GPLv3 License. See the LICENSE file fo
 # Acknowledgements
 
 This project was developed with the invaluable guidance of Professor Paul Andrew Crocker from the Universidade da Beira Interior. 
+
+
