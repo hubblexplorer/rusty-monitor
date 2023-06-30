@@ -137,6 +137,7 @@ pub fn info_page() -> ScrolledWindow {
         "mabox" => "MaBox",
         "openmandriva" => "OpenMandriva",
         "pclinuxos" => "PCLinuxOS",
+        "linuxmint" => "Linux Mint",
         "peppermint" => "Peppermint OS",
         "pop" => "Pop!_OS",
         "redstar" => "RedStar OS",
@@ -159,7 +160,7 @@ pub fn info_page() -> ScrolledWindow {
     grid.add_css_class("debug");
 
     // Distro --------------------------------------------------------
-    let filename = format!("512/512_{}.svg", id);
+    let filename = format!("512/512_{}.svg", id.to_lowercase());
     let data ;
     if let Some(aux) = ASSETS_DIR.get_file(filename){
         data = aux.contents();

@@ -1,4 +1,4 @@
-use gtk::{prelude::*};
+use gtk::{prelude::*, Settings};
 mod layout;
 mod list_processes;
 use layout::*;
@@ -22,6 +22,7 @@ mod info_page{
 
 fn main() {
     gtk::init().unwrap();
+    Settings::default().unwrap().set_gtk_application_prefer_dark_theme(true);
     let application =
     gtk::Application::new(Some("com.rusty-monitor"), Default::default());
     
