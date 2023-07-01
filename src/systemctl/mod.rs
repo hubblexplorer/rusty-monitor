@@ -264,30 +264,7 @@ impl Default for State {
     }
 }
 
-/*
-/// Process
-#[derive(Clone, Debug)]
-pub struct Process {
-    /// pid
-    pid: u64,
-    /// command line that was executed
-    command: String,
-    /// code
-    code: String,
-    /// status
-    status: String,
-}
 
-impl Default for Process {
-    fn default() -> Process {
-        Process {
-            pid: 0,
-            command: Default::default(),
-            code: Default::default(),
-            status: Default::default(),
-        }
-    }
-}*/
 
 /// Doc describes types of documentation possibly
 /// available for a systemd `unit`
