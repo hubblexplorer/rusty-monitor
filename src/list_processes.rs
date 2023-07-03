@@ -59,9 +59,7 @@ fn getinfo(system: &System) -> Vec<Info> {
     for (pid, process) in processes {
         let cpu_usage = process.cpu_usage() / system.cpus().len() as f32;
             let aux: Info = Info::new(*pid, process.name().to_string(), cpu_usage, process.memory(), process.disk_usage().total_written_bytes, process.status().to_string());
-            
             ret.push(aux);
-        
     }
     return ret;
 }
@@ -83,94 +81,30 @@ pub fn processes ()-> Grid{
 
     let searchclone = search.clone();
     
-     let filter = TreeModelFilter::new(&list_processes,None);
+    let filter = TreeModelFilter::new(&list_processes,None);
 
-   
+    //Filter the liststore depending on the search
     filter.set_visible_func(move |model , iter| {
         let searchclone = searchclone.text().to_lowercase();
         if searchclone == "" {
             true 
         }
         else {
-        
             if let Ok(value) = model.get_value(iter,1).get::<String>(){
                 let value = value.as_str().to_lowercase();
-           
-              value.contains(&searchclone)
+                value.contains(&searchclone)
             } 
             else  {
                 false
             }
         }
-    
-        
     });
 
-
-
-    
-
+    //Add the filter to the TreeView and set default sort
     let model = TreeModelSort::with_model(&filter);
     model.set_sort_column_id(SortColumn::Index(2), SortType::Descending);
-    /*let model = list_processes.upcast_ref::<TreeSortable>();
-
-    model.set_sort_func(gtk::SortColumn::Index(3),|model, iter1, iter2| {
-        let value1: String = model.get_value(iter1, 3).get().unwrap();
-        let value2: String = model.get_value(iter2, 3).get().unwrap();
-    
-    
-        println!("{} {}", value1, value2);
-    
-        // Extract memory usage numbers from the formatted strings
-        let usage1 = value1.split_whitespace().next().and_then(|s| s.parse::<f64>().ok());
-        let usage2 = value2.split_whitespace().next().and_then(|s| s.parse::<f64>().ok());
-    
-      
-        if let (Some(usage1), Some(usage2)) = (usage1, usage2) {
-            println!("{} {}", usage1, usage2);
-            // Compare memory usage numbers
-            usage1.total_cmp(&usage2).into()
-        } else {
-            // Fallback to comparing the original strings if memory usage parsing fails
-            value1.cmp(&value2).into()
-        }
-    });*/
-
-    
-
-   /*  let filter = gtk::TreeModelFilter::new(model,None);
-
-   
-    filter.set_visible_func(move |model , iter| {
-        let searchclone = searchclone.text().to_lowercase();
-        if searchclone == "" {
-            true 
-        }
-        else {
-        
-            if let Ok(value) = model.get_value(iter,1).get::<String>(){
-                let value = value.as_str().to_lowercase();
-           
-              value.contains(&searchclone)
-            } 
-            else  {
-                false
-            }
-        }
-    
-        
-    });*/
-
-   
-    
-   
   
     let tree_view = TreeView::with_model(&model);
-    
-
-   
-    
-    //tree_view.add_css_class("tree_view");
 
    
 
@@ -202,8 +136,6 @@ pub fn processes ()-> Grid{
 
     let column = TreeViewColumn::new();
     let cell = CellRendererText::new();
-    
-    
     column.pack_start(&cell, true);
     column.add_attribute(&cell, "text", 2);
     column.set_title("Cpu Usage");
@@ -213,6 +145,7 @@ pub fn processes ()-> Grid{
     column.set_resizable(true);
     column.set_sort_order(SortType::Descending);
 
+    //Format the text to show the percentage
     column.set_cell_data_func(&cell, |_, cell, model, iter| {
         let value = model.get_value(iter, 2).get::<f32>().unwrap() ;
         let text = format!("{:.2}%", value);
@@ -234,13 +167,11 @@ pub fn processes ()-> Grid{
     column.set_clickable(true);
     column.set_resizable(true);
 
+    //Format the text to show the correct units
     column.set_cell_data_func(&cell, |_, cell, model, iter| {
         let value = model.get_value(iter, 3).get::<u64>().unwrap() ;
         let formatted = format_memory_usage(value);
         cell.set_property("text",Some(&formatted));
-            
-        
-        
     });
     tree_view.append_column(&column);
 
@@ -254,20 +185,17 @@ pub fn processes ()-> Grid{
     column.set_sort_column_id(4);
     column.set_clickable(true);
     column.set_resizable(true);
+    //Format the text to show the correct units
     column.set_cell_data_func(&cell, |_, cell, model, iter| {
         let value = model.get_value(iter, 4).get::<u64>().unwrap() ;
         let formatted = format_memory_usage(value);
-        cell.set_property("text",Some(&formatted));
-            
-        
-        
+        cell.set_property("text",Some(&formatted)); 
     });
     tree_view.append_column(&column);
 
 
     let column = TreeViewColumn::new();
     let cell = CellRendererText::new();
-    cell.set_property("text", "value%");
     column.pack_start(&cell, true);
     column.add_attribute(&cell, "text", 5);
     column.set_title("Status");
@@ -276,19 +204,17 @@ pub fn processes ()-> Grid{
     column.set_clickable(true);
     column.set_resizable(true);
     tree_view.append_column(&column);
-     //--------------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------------
 
     let (sender, receiver) = MainContext::channel(PRIORITY_DEFAULT);
 
     let sender_clone = sender.clone();
-    // The long running operation runs now in a separate thread
 
+    // Thread that updates the list of processes
     thread::spawn( move || {
         let mut system = System::new_all();
      
         loop {
-
-           
             system.refresh_processes();
 
             let info = getinfo(&system);
@@ -300,30 +226,21 @@ pub fn processes ()-> Grid{
     });
 
     // The main loop executes the closure as soon as it receives the message
-    
     receiver.attach(
         None,
         clone!(@weak  list_processes => @default-return Continue(false),
                     move |info| {       
-                      // Get the TreeSelection object from the tree_view_clone
-
-                       
-                        
-
+                     
                         list_processes.clear();
                         let mut count = 0;
 
                         for i in info {
-                           // let cpu_usage = format!("{:.4}%", (i.cpu_usage).to_string());
-                            //let memory = format_memory_usage(i.memory);
                             
                             let pid: i32 = i.pid.to_string().parse().unwrap();
                             list_processes.insert_with_values(Some(count), &[(0, &pid), (1,&i.name.to_string()), (2,&i.cpu_usage),(3,&i.memory),(4,&i.disk_usage),(5,&i.status.to_string())] );
                            
                             count +=1;
                         }
-                       
-                       
                         Continue(true)
                     }
         ),
@@ -366,7 +283,6 @@ pub fn processes ()-> Grid{
 
 
         let stop_button = Button::new();
-
         stop_button.set_label("Stop");
 
         list_menu.append(&stop_button);
@@ -374,7 +290,7 @@ pub fn processes ()-> Grid{
 
         let row_data_ref_clone = Rc::clone(&row_data_ref);
         let popover_menu_clone = popover_menu.clone();
-        //Actions for the kill button
+        //Actions for the stop button
         stop_button.connect_clicked(move |_| {
     
             let row_data: std::cell::Ref<Vec<String>> = row_data_ref_clone.borrow();
@@ -394,15 +310,11 @@ pub fn processes ()-> Grid{
 
 
         let cont_button = Button::new();
-
         cont_button.set_label("Continue");
-
         list_menu.append(&cont_button);
-
-
         let row_data_ref_clone = Rc::clone(&row_data_ref);
         let popover_menu_clone = popover_menu.clone();
-        //Actions for the kill button
+        //Actions for the continue button
         cont_button.connect_clicked(move |_| {
     
             let row_data: std::cell::Ref<Vec<String>> = row_data_ref_clone.borrow();
@@ -430,7 +342,7 @@ pub fn processes ()-> Grid{
         tree_view.add_controller(gesture_click.clone());
         let tree_view_clone = tree_view.clone();
 
-        //Connecter to the right button
+        //Connecter to the right button to open popup menu
         gesture_click.connect_pressed(move |_gesture_click, _n_press, x, y| {
             if let Some((path, _)) = tree_view_clone.dest_row_at_pos(x as i32, y as i32) {
                 let path = path.unwrap();
@@ -441,6 +353,7 @@ pub fn processes ()-> Grid{
                 let column_count = model.n_columns();
                 let mut row_data = Vec::new();
                 
+                //Get the data in to string
                 for i in 0..column_count {
                     let value = model.get_value(&iter, i);
                     if let Ok(value) = value.get::<String>() {
@@ -457,9 +370,6 @@ pub fn processes ()-> Grid{
                     }
                 }
 
-                // Print the data in the row
-                // println!("Clicked on row: {:?}, data: {:?}", path.to_str(), row_data);
-
                 //Send data to button
                 *row_data_ref.borrow_mut() = row_data;
 
@@ -469,21 +379,10 @@ pub fn processes ()-> Grid{
 
                 popover_menu.popup();
             } 
-        });
-
-
-        
-
-
-      
-    
-
-       
-        
-       
-        
+        }); 
     //--------------------------------------------------------------------------------------------
- 
+    
+    //ScrolledWindow
     let scrolled_window = ScrolledWindow::new();
     scrolled_window.set_policy(PolicyType::Automatic, PolicyType::Always);
     scrolled_window.set_child(Some(&tree_view));
@@ -491,7 +390,7 @@ pub fn processes ()-> Grid{
     scrolled_window.set_vexpand(true);
     
    
- 
+    //Attach elements to the grid
     grid.attach(&search, 0,  0, 1, 1);
     grid.attach(&scrolled_window, 0, 1, 1, 10);
     grid

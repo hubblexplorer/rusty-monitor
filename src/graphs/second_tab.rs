@@ -6,8 +6,6 @@ pub fn create_tabs() -> Notebook
 {
     let tabs: Notebook = gtk::Notebook::new();
     
-
-
     let cpu = graphts::cpu_grapth();
     let cpu_label = "Cpu";
     let cpu_label = gtk::Label::new(Some(&cpu_label));
@@ -17,9 +15,6 @@ pub fn create_tabs() -> Notebook
     let ram_label = "Ram";
     let ram_label = gtk::Label::new(Some(&ram_label));
     tabs.append_page(&ram, Some(&ram_label));
-
-
-
 
     tabs
 }

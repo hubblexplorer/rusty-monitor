@@ -1,6 +1,7 @@
+//Warning: this code should be transform into an ui file when the tools for contructing a ui file are available
 use std::{fs, io::ErrorKind, process::Command};
 
-use gtk::{gdk_pixbuf::PixbufLoader, prelude::*, Grid, Image, Label, ScrolledWindow, PolicyType};
+use gtk::{gdk_pixbuf::PixbufLoader, prelude::*, Grid, Image, Label, PolicyType, ScrolledWindow};
 
 use include_dir::{include_dir, Dir};
 use reqwest::blocking::get;
@@ -38,30 +39,29 @@ fn get_website(dist_name: &str) -> Result<String, ErrorKind> {
         "https://distrowatch.com/table.php?distribution={}",
         dist_name
     );
-    
-    if let Ok(response) = get(&url){
-    if response.status().is_success() {
-        let body = response.text().unwrap();
 
-        let document = Html::parse_document(&body);
-        let selector = Selector::parse("tr.Background").unwrap();
+    if let Ok(response) = get(&url) {
+        if response.status().is_success() {
+            let body = response.text().unwrap();
 
-        for element in document.select(&selector) {
-            let text = element.text().collect::<Vec<_>>();
-            if text.contains(&"Home Page") {
-                let link_element = text.get(3).unwrap();
+            let document = Html::parse_document(&body);
+            let selector = Selector::parse("tr.Background").unwrap();
 
-                return Ok(link_element.to_string());
+            for element in document.select(&selector) {
+                let text = element.text().collect::<Vec<_>>();
+                if text.contains(&"Home Page") {
+                    let link_element = text.get(3).unwrap();
+
+                    return Ok(link_element.to_string());
+                }
             }
+            return Err(ErrorKind::Other);
+        } else {
+            return Err(ErrorKind::Other);
         }
-        return Err(ErrorKind::Other);
     } else {
         return Err(ErrorKind::Other);
     }
-}
-else {
-    return Err(ErrorKind::Other);
-}
 }
 
 fn format_memory_usage(memory_usage: u64) -> String {
@@ -161,11 +161,10 @@ pub fn info_page() -> ScrolledWindow {
 
     // Distro --------------------------------------------------------
     let filename = format!("512/512_{}.svg", id.to_lowercase());
-    let data ;
-    if let Some(aux) = ASSETS_DIR.get_file(filename){
+    let data;
+    if let Some(aux) = ASSETS_DIR.get_file(filename) {
         data = aux.contents();
-    }
-    else {
+    } else {
         data = ASSETS_DIR.get_file("512/Tux.svg").unwrap().contents();
     }
 
@@ -375,7 +374,6 @@ pub fn info_page() -> ScrolledWindow {
     grid.attach(&l, 5, 14, 2, 1);
 
     add_empty_cells(&grid);
-
 
     let scrolled_window = ScrolledWindow::new();
     scrolled_window.set_policy(PolicyType::Automatic, PolicyType::Always);

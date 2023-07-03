@@ -136,12 +136,6 @@ pub fn cpu_grapth() -> ScrolledWindow{
                 cr.line_to(target.0, target.1);
                 cr.stroke().expect("Error drawing");
             }
-
-            // Draw the label
-            /*cr.move_to(target.0 - 8.0, target.1 - 10.0);
-
-            cr.show_text(target.2.to_string().as_ref())
-                .expect("Error drawing");*/
         }
 
         gtk::Inhibit(false);
@@ -161,10 +155,6 @@ pub fn cpu_grapth() -> ScrolledWindow{
 pub fn ram_graph() -> ScrolledWindow{
     let ret_window = ScrolledWindow::new();
     let drawing_area = DrawingArea::new();
-
-    // Connect to the `draw` signal of the drawing area to draw on it
-
-    // Create a channel for sending messages between threads
 
     let x_axis = (0..=29).collect::<Vec<_>>();
     let mut y_axis = vec![0.0; 30];
@@ -285,11 +275,6 @@ pub fn ram_graph() -> ScrolledWindow{
             cr.line_to(target.0, target.1);
             cr.stroke().expect("Error drawing");
 
-            // Draw the label
-            /*cr.move_to(target.0 - 8.0, target.1 - 10.0);
-
-            cr.show_text(target.2.to_string().as_ref())
-                .expect("Error drawing");*/
         }
 
         gtk::Inhibit(false);
